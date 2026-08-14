@@ -1,3 +1,5 @@
-﻿# This is intentionally an empty profile patch layer.
-# The skin selection is managed in ~/.dsh/cordis.patch.yml.
+# DSH requires this profile overlay to be a top-level YAML array.
+# Keep the empty array when no profile-specific entries are needed.
 []
+
+# The installer writes its managed comments below without adding a second YAML document.

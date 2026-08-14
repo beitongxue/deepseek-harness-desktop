@@ -1,6 +1,6 @@
-﻿# 安装说明（中文）
+# 安装说明（中文）
 
-## 1. 建议安装方式
+## 1. 全新安装
 
 在仓库根目录打开 PowerShell，执行：
 
@@ -9,20 +9,48 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\install.ps1
 ```
 
-安装脚本不需要管理员权限。若企业策略阻止 npm 或 PowerShell，请由管理员按组织策略放行，不要把账号凭据写入脚本。
+安装器会按 `versions.json` 安装 DSH 和 Web UI，并将桌面封装安装到：
 
-## 2. 安装后文件位置
+```text
+%LOCALAPPDATA%\DeepSeek-Harness-Desktop
+```
+
+## 2. 已有 DSH/Web UI 的接入
+
+如果你已经安装好 DeepSeek Harness 和 `dsh-web-ui`，不要重复安装，执行：
+
+```powershell
+.\install.ps1 -DesktopOnly
+```
+
+如果已有 profile 中缺少 Web UI 或皮肤，这个模式会明确报错，而不是悄悄生成一个不完整的桌面程序。全新机器请使用不带 `-DesktopOnly` 的命令。
+
+## 3. 修复
+
+```powershell
+.\repair.ps1
+```
+
+默认只修复桌面封装、配置、皮肤依赖和原生补丁，不重新安装 DSH/Web UI。
+
+## 4. 安装后文件位置
 
 - 桌面快捷方式：`%USERPROFILE%\Desktop\DeepSeek Harness.lnk`
 - 启动器副本：`%LOCALAPPDATA%\DeepSeek-Harness-Desktop`
 - DeepSeek Harness CLI：`%APPDATA%\npm\dsh.cmd`
 - 用户配置：`%USERPROFILE%\.dsh`
+- Web profile：`%USERPROFILE%\.dsh\profiles\web`
+- 安装状态：`%LOCALAPPDATA%\DeepSeek-Harness-Desktop\install-state.json`
 - 启动日志：`%LOCALAPPDATA%\DeepSeek-Harness-Desktop\logs`
+- 配置备份：`%USERPROFILE%\.dsh\backups\deepseek-harness-desktop`
 
-## 3. 版本与网络
+## 5. 验证
 
-安装器会从 npm 安装固定版本。若 npm registry 不可访问，安装会在依赖安装步骤失败；先解决网络、代理或 registry 配置，再重新执行即可。脚本不会把私有 registry token 写入仓库。
+```powershell
+.\diagnose.ps1 -FailOnError
+.\Start-DeepSeek-Harness.ps1 -NoBrowser
+```
 
-## 4. 从源码更新
+## 6. 网络与安全
 
-更新仓库后先审阅 `install.ps1` 的版本号和变更，再执行安装。脚本会在覆盖 dsh 配置前创建备份。
+安装过程中需要访问 npm registry。脚本不会读取、上传或提交 token、凭据、session、工作空间路径和日志。请不要将 `.dsh` 目录或备份目录提交到 GitHub。
