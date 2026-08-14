@@ -1,48 +1,93 @@
-﻿# 故障排查（中文）
+# 故障排查（中文）
 
-## 双击桌面图标没有窗口
+## 1. 双击桌面图标没有窗口
 
-1. 确认 `%APPDATA%\npm\dsh.cmd` 存在。
-2. 查看 `%LOCALAPPDATA%\DeepSeek-Harness-Desktop\logs\dsh-web.log` 和 `dsh-web-error.log`。
-3. 在 PowerShell 手动运行：
-
-   ```powershell
-   & "$env:APPDATA\npm\dsh.cmd" web
-   ```
-
-4. 确认 3080 端口没有被其他程序占用，并确认 Chrome 或 Edge 已安装。
-
-## 皮肤列表为空或只有默认样式
-
-皮肤是通过 npm 包安装的，不是仅靠 YAML 文件生成。重新运行安装器，或检查：
+先在源码目录执行：
 
 ```powershell
-& "$env:APPDATA\npm\dsh.cmd" plugin --profile web list
+.\diagnose.ps1
+.\Start-DeepSeek-Harness.ps1 -Status
 ```
 
-如果上游包版本变更导致皮肤 id 不匹配，应以 `dsh-web-ui` 仓库当前说明为准更新 `config/skin.cordis.patch.yml`。
+然后查看：
 
-## 选择工作空间窗口仍被遮挡
+```text
+%LOCALAPPDATA%\DeepSeek-Harness-Desktop\logs\dsh-web.log
+%LOCALAPPDATA%\DeepSeek-Harness-Desktop\logs\dsh-web-error.log
+```
 
-以管理员权限运行不是首选。先确认补丁是否应用：
+如果安装目录不可写，日志会回退到同目录下的 LocalAppData 日志路径。
+
+## 2. 未找到 dsh.cmd
 
 ```powershell
-& "$env:LOCALAPPDATA\DeepSeek-Harness-Desktop\patches\native-directory-picker-owner.patch.ps1" -DshRoot "$env:APPDATA\npm\node_modules\@deepseek-ai\dsh"
+Test-Path "$env:APPDATA\npm\dsh.cmd"
+Get-Command dsh.cmd
 ```
 
-如果脚本提示源码锚点不匹配，说明上游 `worker.cjs` 结构已经变化。不要手工盲改；保留错误信息，针对新版本更新补丁脚本。
+如果命令不存在，先安装 DeepSeek Harness；如果已经安装但不在 PATH，可重启 PowerShell，或确认 npm global bin 目录已加入 PATH。
 
-## 想恢复原来的配置
+## 3. 已有安装却提示 Web UI 缺失
 
-运行：
+`-DesktopOnly` 不会凭空下载 Web UI。确认 profile 中存在：
+
+```powershell
+Test-Path "$env:USERPROFILE\.dsh\profiles\web\node_modules\@linxin666\dsh-web-ui-all\package.json"
+```
+
+如果不存在，改用全新安装流程：
+
+```powershell
+.\install.ps1
+```
+
+## 4. 皮肤列表为空或出现 duplicate loader entry
+
+皮肤必须是实际存在的 npm package。安装器将皮肤作为 profile dependency，并只在全局 managed patch 中激活，避免同时出现在 bundle 和 patch 中。
+
+重新修复：
+
+```powershell
+.\repair.ps1
+.\diagnose.ps1 -FailOnError
+```
+
+不要手动把同一皮肤同时加入 `dsh.profile.bundles` 和 `cordis.patch.yml`。
+
+## 5. 选择工作空间窗口仍被遮挡
+
+确认诊断中的 `nativePickerPatched` 为 `True`。如果补丁提示源码锚点不匹配，说明上游 `worker.cjs` 结构已经变化。不要盲目替换字符串；保留原文件并针对新版本更新：
+
+```text
+patches/native-directory-picker-owner.patch.ps1
+```
+
+## 6. 端口 3080 被占用
+
+```powershell
+.\Start-DeepSeek-Harness.ps1 -Status
+Get-NetTCPConnection -LocalPort 3080 -State Listen
+```
+
+如果已有正常 DSH 服务，启动器会复用它；如果是其他程序占用，请停止该程序或调整上游 profile 的端口配置后再启动。
+
+## 7. 想恢复原来的配置
+
+默认卸载只删除安装器的 marked managed block：
 
 ```powershell
 .\uninstall.ps1
 ```
 
-脚本会尝试从 `%USERPROFILE%\.dsh\backups\deepseek-harness-desktop` 恢复最近一次备份。它不会删除登录凭据或工作空间。
+恢复本次安装记录的精确备份：
 
-## PowerShell 提示禁止执行脚本
+```powershell
+.\uninstall.ps1 -RestoreConfig
+```
+
+旧版本状态文件如果只有备份文件名而没有目标路径，脚本会拒绝猜测并提示手动处理。
+
+## 8. PowerShell 禁止执行脚本
 
 只对当前 PowerShell 进程临时放行：
 
@@ -50,4 +95,4 @@
 Set-ExecutionPolicy -Scope Process Bypass
 ```
 
-不要为了本安装包修改整个系统的执行策略。
+不要为了本项目修改整个系统的执行策略。

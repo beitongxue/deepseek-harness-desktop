@@ -1,20 +1,4 @@
-﻿# dsh-skin managed block. The package is provided by the upstream dsh-web-ui project.
-- id: ui-skin-dragon-heir
-  disabled: true
-- id: ui-skin-miku
-  disabled: true
-- id: ui-skin-minecraft
-  disabled: true
-- id: ui-skin-qq98
-  disabled: true
-- id: ui-skin-ths
-  disabled: true
-- id: ui-skin-trading
-  disabled: true
-- id: ui-skin-whale-song
-  disabled: true
-- id: ui-skin-xp
-  disabled: true
-- insert:
-    - id: ui-skin-blue-fantasy
-      name: '@linxin666/dsh-client-ui-skin-blue-fantasy'
+# This file is a reference template only.
+# The installer writes the active skin into a marked block in:
+#   %USERPROFILE%\.dsh\cordis.patch.yml
+# Install the matching npm package before enabling a skin manually.

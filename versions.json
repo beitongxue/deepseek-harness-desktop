@@ -1,0 +1,7 @@
+{
+  "dsh": "0.1.0-rc.6",
+  "webUi": "0.1.12",
+  "defaultSkin": "blue-fantasy",
+  "minimumNodeMajor": 22,
+  "defaultPort": 3080
+}
