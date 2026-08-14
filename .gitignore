@@ -1,0 +1,25 @@
+﻿# Local runtime and secrets
+logs/
+node_modules/
+*.log
+*.tmp
+*.bak
+*.credentials.yaml
+credentials.yaml
+session/
+storage/
+
+# Patch backups created on a user's machine
+*.codex-backup-*
+
+# PowerShell/editor noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local verification artifacts
+native-worker-before-fix.cjs
+verify-native-picker-owner.cjs
+dsh-*.txt
+dsh-*.json
