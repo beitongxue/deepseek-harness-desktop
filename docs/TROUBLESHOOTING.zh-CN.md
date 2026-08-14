@@ -62,11 +62,11 @@ Test-Path "$env:USERPROFILE\.dsh\profiles\web\node_modules\@linxin666\dsh-web-ui
 patches/native-directory-picker-owner.patch.ps1
 ```
 
-## 6. 端口 3080 被占用
+## 6. 端口 3180 被占用
 
 ```powershell
 .\Start-DeepSeek-Harness.ps1 -Status
-Get-NetTCPConnection -LocalPort 3080 -State Listen
+Get-NetTCPConnection -LocalPort 3180 -State Listen
 ```
 
 如果已有正常 DSH 服务，启动器会复用它；如果是其他程序占用，请停止该程序或调整上游 profile 的端口配置后再启动。

@@ -60,7 +60,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\Start-DeepSeek-Harness.ps1 -NoBrowser
 ```
 
-启动器会记录 PID，检查 `127.0.0.1:3080` 是否已有服务，避免重复启动。日志位于安装目录的 `logs` 子目录；若安装目录不可写，则回退到 `%LOCALAPPDATA%\DeepSeek-Harness-Desktop\logs`。
+启动器会记录 PID，检查 `127.0.0.1:3180` 是否已有服务，避免重复启动。日志位于安装目录的 `logs` 子目录；若安装目录不可写，则回退到 `%LOCALAPPDATA%\DeepSeek-Harness-Desktop\logs`。
 
 ## 诊断
 
@@ -70,7 +70,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\diagnose.ps1 -FailOnError
 ```
 
-诊断会检查 DSH 命令、Web UI、皮肤包、managed patch、原生补丁、3080 端口、快捷方式和安装状态文件。
+诊断会检查 DSH 命令、Web UI、皮肤包、managed patch、原生补丁、3180 端口、快捷方式和安装状态文件。
 
 ## 配置和数据边界
 
@@ -95,7 +95,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 - DSH：`@deepseek-ai/dsh`
 - Web UI：`@linxin666/dsh-web-ui-all`
 - 默认皮肤：`blue-fantasy`
-- 默认端口：`3080`
+- 默认端口：`3180`
 
 升级前请先在隔离环境验证上游版本，修改 `versions.json` 后执行 `.\install.ps1 -Repair`；如果只想升级桌面封装，不要修改版本清单，执行 `.\install.ps1 -DesktopOnly -Repair`。
 

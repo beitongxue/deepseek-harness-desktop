@@ -23,18 +23,23 @@ try {
 $logFile = Join-Path $logDirectory 'dsh-web.log'
 $errorLogFile = Join-Path $logDirectory 'dsh-web-error.log'
 $pidFile = Join-Path $logDirectory 'dsh-web.pid'
-if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
-  $configuredPort = $Port
-  $statePath = Join-Path $root 'install-state.json'
-  if ($configuredPort -le 0 -and (Test-Path -LiteralPath $statePath)) {
-    try {
-      $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
-      if ($state.PSObject.Properties['port'] -and [int]$state.port -gt 0) { $configuredPort = [int]$state.port }
-    } catch { }
-  }
-  if ($configuredPort -le 0) { $configuredPort = 3080 }
-  $BaseUrl = "http://127.0.0.1:$configuredPort"
+$configuredPort = $Port
+$statePath = Join-Path $root 'install-state.json'
+if ($configuredPort -le 0 -and (Test-Path -LiteralPath $statePath)) {
+  try {
+    $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($state.PSObject.Properties['port'] -and [int]$state.port -gt 0) { $configuredPort = [int]$state.port }
+  } catch { }
 }
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+  if ($configuredPort -le 0) { $configuredPort = 3180 }
+  $BaseUrl = "http://127.0.0.1:$configuredPort"
+} elseif ($configuredPort -le 0) {
+  try {
+    $configuredPort = ([Uri]$BaseUrl).Port
+  } catch { }
+}
+if ($configuredPort -le 0) { $configuredPort = 3180 }
 function Show-Failure([string]$Message) {
   Write-Error $Message
   if ($ShowErrorDialog) {
@@ -116,7 +121,7 @@ if (-not (Test-DshWeb)) {
   $existing = Get-TrackedProcess
   if (-not $existing) {
     try {
-      $commandLine = '"{0}" web' -f $dsh
+      $commandLine = '"{0}" web --port {1}' -f $dsh, $configuredPort
       $process = Start-Process -FilePath $env:ComSpec -ArgumentList @('/d', '/c', $commandLine) -WorkingDirectory $root -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError $errorLogFile -PassThru
       Set-Content -LiteralPath $pidFile -Value $process.Id -Encoding ASCII
     } catch {

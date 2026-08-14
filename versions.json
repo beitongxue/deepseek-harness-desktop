@@ -3,5 +3,5 @@
   "webUi": "0.1.12",
   "defaultSkin": "blue-fantasy",
   "minimumNodeMajor": 22,
-  "defaultPort": 3080
+  "defaultPort": 3180
 }

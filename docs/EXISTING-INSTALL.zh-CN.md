@@ -44,7 +44,7 @@ Test-Path "$env:USERPROFILE\.dsh\profiles\web\package.json"
 ```powershell
 .\diagnose.ps1
 .\Start-DeepSeek-Harness.ps1 -NoBrowser
-Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3080
+Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3180
 ```
 
 ## 5. 重要路径
