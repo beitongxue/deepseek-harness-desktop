@@ -1,4 +1,4 @@
-# DeepSeek Harness Desktop
+﻿# DeepSeek Harness Desktop
 
 这是一个 Windows 桌面封装器：它把 DeepSeek Harness CLI、`dsh-web-ui` Web UI 和可选皮肤接入到一个可诊断、可升级、可卸载的启动流程中。
 
@@ -19,7 +19,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 ## 前置条件
 
 - Windows 10/11
-- Node.js 22 或更高版本，`node.exe` 和 `npm.cmd` 可在 PATH 中找到
+- Node.js 22 或更高版本，`node.exe` 和 `npm.cmd` 可在 PATH 中找到；无需预先运行 `corepack enable`
 - 能访问 npm registry；如使用私有 registry，请在本机配置 npm，不要把 token 写入仓库
 - Chrome 或 Edge 不是硬性依赖；没有它们时启动器会调用系统默认浏览器
 
@@ -31,7 +31,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\install.ps1
 ```
 
-安装器会自动安装清单中的 DSH 和 Web UI 版本，并注册默认皮肤。
+安装器会自动安装清单中的 DSH、Web UI 和 pnpm 版本，并注册默认皮肤。它还会把 npm 的全局目录加入用户 PATH，并在桌面启动 DSH 时再次注入该目录，避免“检查更新”找不到 pnpm。
 
 ### 已有 DSH/Web UI，只安装桌面封装
 
@@ -95,6 +95,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 - DSH：`@deepseek-ai/dsh`
 - Web UI：`@linxin666/dsh-web-ui-all`
 - 默认皮肤：`blue-fantasy`
+- pnpm：用于 DeepSeek Harness 的更新检查
 - 默认端口：`3180`
 
 升级前请先在隔离环境验证上游版本，修改 `versions.json` 后执行 `.\install.ps1 -Repair`；如果只想升级桌面封装，不要修改版本清单，执行 `.\install.ps1 -DesktopOnly -Repair`。

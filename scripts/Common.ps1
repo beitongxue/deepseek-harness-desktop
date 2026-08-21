@@ -22,6 +22,73 @@ function Get-CommandPath {
   return $null
 }
 
+function Get-NpmGlobalBin {
+  [CmdletBinding()]
+  param([string]$NpmCommand)
+  $fallback = Join-Path $env:APPDATA 'npm'
+  if ([string]::IsNullOrWhiteSpace($NpmCommand)) {
+    $NpmCommand = Get-CommandPath 'npm.cmd'
+    if (-not $NpmCommand) {
+      $candidate = Join-Path $env:ProgramFiles 'nodejs\npm.cmd'
+      if (Test-Path -LiteralPath $candidate) { $NpmCommand = $candidate }
+    }
+  }
+  $prefix = $null
+  $exitCode = -1
+  if ($NpmCommand -and (Test-Path -LiteralPath $NpmCommand)) {
+    try {
+      $prefix = ((@(& $NpmCommand prefix --global 2>$null) | Select-Object -First 1) -as [string]).Trim()
+      $exitCode = $LASTEXITCODE
+    } catch { }
+  }
+  if ($exitCode -eq 0 -and -not [string]::IsNullOrWhiteSpace($prefix)) {
+    try { return [System.IO.Path]::GetFullPath($prefix) } catch { return $prefix }
+  }
+  return $fallback
+}
+
+function Test-PathContainsDirectory {
+  param([AllowEmptyString()][string]$PathValue, [Parameter(Mandatory)][string]$Directory)
+  $needle = $Directory.Trim().Trim('"').TrimEnd('\')
+  if ([string]::IsNullOrWhiteSpace($needle)) { return $false }
+  return @($PathValue -split ';' | Where-Object {
+    $_ -and $_.Trim().Trim('"').TrimEnd('\') -ieq $needle
+  }).Count -gt 0
+}
+
+function Ensure-NpmGlobalBinOnPath {
+  [CmdletBinding()]
+  param([switch]$Persist, [string]$NpmGlobalBin = (Get-NpmGlobalBin))
+  if ([string]::IsNullOrWhiteSpace($NpmGlobalBin)) { return $null }
+  try { $NpmGlobalBin = [System.IO.Path]::GetFullPath($NpmGlobalBin) } catch { }
+  if (-not (Test-PathContainsDirectory -PathValue ([string]$env:Path) -Directory $NpmGlobalBin)) {
+    $env:Path = if ([string]::IsNullOrWhiteSpace($env:Path)) { $NpmGlobalBin } else { "$NpmGlobalBin;$env:Path" }
+  }
+  $persisted = $false
+  if ($Persist) {
+    try {
+      $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+      if (-not (Test-PathContainsDirectory -PathValue ([string]$userPath) -Directory $NpmGlobalBin)) {
+        $updatedUserPath = if ([string]::IsNullOrWhiteSpace($userPath)) { $NpmGlobalBin } else { "$userPath;$NpmGlobalBin" }
+        [Environment]::SetEnvironmentVariable('Path', $updatedUserPath, 'User')
+      }
+      $persisted = $true
+    } catch {
+      Write-Warning "无法写入用户 PATH；桌面启动器仍会为 DSH 临时补充 $NpmGlobalBin。$($_.Exception.Message)"
+    }
+  }
+  return [pscustomobject]@{ Path = $NpmGlobalBin; Persisted = $persisted }
+}
+
+function Get-PnpmCommandPath {
+  $npmGlobalBin = Get-NpmGlobalBin
+  $candidates = @(
+    (Join-Path $npmGlobalBin 'pnpm.cmd'),
+    (Get-CommandPath 'pnpm.cmd'),
+    (Get-CommandPath 'pnpm')
+  ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+  return ($candidates | Select-Object -First 1)
+}
 function Get-DshCommandPath {
   $candidates = @(
     (Join-Path $env:APPDATA 'npm\dsh.cmd'),

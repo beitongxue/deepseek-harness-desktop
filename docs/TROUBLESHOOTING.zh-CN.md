@@ -1,4 +1,4 @@
-# 故障排查（中文）
+﻿# 故障排查（中文）
 
 ## 1. 双击桌面图标没有窗口
 
@@ -96,3 +96,13 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 不要为了本项目修改整个系统的执行策略。
+## 9. 点击“检查更新”提示未找到 pnpm
+
+桌面服务进程可能继承了旧的 Windows PATH；即使 IDE 或终端能运行 pnpm，已经启动的 DSH 也不一定能找到它。先运行：
+
+```powershell
+.\install.ps1 -DesktopOnly -Repair
+& "$env:APPDATA\npm\pnpm.cmd" --version
+```
+
+随后**完全退出并重新打开** DeepSeek Harness（可先执行 `.\Start-DeepSeek-Harness.ps1 -Stop`，再双击桌面图标）。安装器会在缺失时安装所需 pnpm、更新用户 PATH，并让桌面启动器把 npm 全局目录传给 DSH 服务。

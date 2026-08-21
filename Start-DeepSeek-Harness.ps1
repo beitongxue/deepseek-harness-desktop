@@ -13,6 +13,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSCommandPath
+. (Join-Path $root 'scripts\Common.ps1')
+Ensure-NpmGlobalBinOnPath | Out-Null
 $logDirectory = Join-Path $root 'logs'
 try {
   New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null

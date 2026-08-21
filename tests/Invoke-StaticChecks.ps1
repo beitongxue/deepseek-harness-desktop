@@ -20,11 +20,12 @@ foreach ($file in $scriptFiles) {
 
 $manifestPath = Join-Path $root 'versions.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-foreach ($name in @('dsh', 'webUi', 'defaultSkin', 'minimumNodeMajor', 'defaultPort')) {
+foreach ($name in @('dsh', 'webUi', 'defaultSkin', 'pnpm', 'minimumNodeMajor', 'defaultPort')) {
   if (-not $manifest.PSObject.Properties[$name] -or $null -eq $manifest.$name) {
     throw "versions.json 缺少字段：$name"
   }
 }
+if ([string]$manifest.pnpm -notmatch '^\d+\.\d+\.\d+') { throw 'pnpm 版本格式不合理。' }
 if ([int]$manifest.minimumNodeMajor -lt 18) { throw 'minimumNodeMajor 不合理。' }
 if ([int]$manifest.defaultPort -lt 1 -or [int]$manifest.defaultPort -gt 65535) { throw 'defaultPort 不在有效范围内。' }
 

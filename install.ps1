@@ -46,6 +46,24 @@ function Get-NpmCommand {
   if (-not (Test-Path -LiteralPath $npm)) { throw '未找到 npm.cmd，请确认 Node.js 安装完整。' }
   return $npm
 }
+function Ensure-Pnpm {
+  $null = Require-Node
+  $npm = Get-NpmCommand
+  $npmGlobalBin = Get-NpmGlobalBin -NpmCommand $npm
+  Ensure-NpmGlobalBinOnPath -NpmGlobalBin $npmGlobalBin -Persist | Out-Null
+  $existing = Get-PnpmCommandPath
+  if ($existing) {
+    Write-Host "复用已有 pnpm：$existing" -ForegroundColor DarkGray
+    return $existing
+  }
+  Write-Step "安装 pnpm $($versions.pnpm)"
+  & $npm install --global --no-fund --no-audit "pnpm@$($versions.pnpm)"
+  if ($LASTEXITCODE -ne 0) { throw "pnpm 安装失败，退出码：$LASTEXITCODE" }
+  Ensure-NpmGlobalBinOnPath -NpmGlobalBin (Get-NpmGlobalBin -NpmCommand $npm) -Persist | Out-Null
+  $result = Get-PnpmCommandPath
+  if (-not $result) { throw '安装后未找到 pnpm.cmd。请确认 npm global bin 目录可用。' }
+  return $result
+}
 function Get-DshVersion([string]$DshCommand) {
   try { return ((& $DshCommand --version 2>$null).Trim()) } catch { return 'unknown' }
 }
@@ -200,9 +218,12 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'Start-DeepSeek-Harness.ps1') -De
 Copy-Item -LiteralPath (Join-Path $projectRoot 'Start DeepSeek Harness.vbs') -Destination $InstallRoot -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot 'Start DeepSeek Harness.cmd') -Destination $InstallRoot -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot 'patches') -Destination $InstallRoot -Recurse -Force
+Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts') -Destination $InstallRoot -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot 'assets') -Destination $InstallRoot -Recurse -Force
 
 Write-Step '准备 DeepSeek Harness'
+$pnpmCommand = Ensure-Pnpm
+Write-Host "使用 pnpm：$pnpmCommand" -ForegroundColor DarkGray
 $dshCommand = Ensure-Harness
 Write-Host "使用 dsh：$dshCommand" -ForegroundColor DarkGray
 Ensure-WebUi $dshCommand
@@ -221,6 +242,8 @@ $state = [ordered]@{
   dshCommand = $dshCommand
   dshVersion = (Get-DshVersion $dshCommand)
   requestedDshVersion = [string]$versions.dsh
+  pnpmCommand = $pnpmCommand
+  pnpmVersion = ((& $pnpmCommand --version).Trim())
   webUiVersion = [string]$versions.webUi
   port = [int]$versions.defaultPort
   skin = $Skin
@@ -239,6 +262,7 @@ Write-Host "`n安装/接入完成。" -ForegroundColor Green
 Write-Host "桌面安装目录：$InstallRoot"
 Write-Host "Web profile：$(Get-WebProfileRoot)"
 Write-Host "DSH 版本：$($state.dshVersion)"
+Write-Host "pnpm 版本：$($state.pnpmVersion)"
 Write-Host "Web UI 版本：$($state.webUiVersion)"
 Write-Host "默认皮肤：$Skin"
 if ($shortcut) { Write-Host "桌面快捷方式：$shortcut" }

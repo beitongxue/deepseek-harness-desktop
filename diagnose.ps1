@@ -10,6 +10,7 @@ $projectRoot = Split-Path -Parent $PSCommandPath
 . (Join-Path $projectRoot 'scripts\Common.ps1')
 $versions = Get-VersionManifest $projectRoot
 $dsh = Get-DshCommandPath
+$pnpm = Get-PnpmCommandPath
 $profile = Get-WebProfileRoot
 $pkgPath = Get-WebProfilePackagePath
 $statePath = Get-InstallStatePath $InstallRoot
@@ -37,6 +38,8 @@ if ($netCommand) {
     $client.Close()
   } catch { $portListening = $false }
 }
+$pnpmVersion = $null
+if ($pnpm) { try { $pnpmVersion = ((& $pnpm --version 2>$null).Trim()) } catch { $pnpmVersion = 'error' } }
 $dshVersion = $null
 if ($dsh) { try { $dshVersion = ((& $dsh --version 2>$null).Trim()) } catch { $dshVersion = 'error' } }
 $pkg = if (Test-Path -LiteralPath $pkgPath) { Read-JsonFile $pkgPath } else { $null }
@@ -45,6 +48,8 @@ $items = [ordered]@{
   installRoot = $InstallRoot
   installRootExists = (Test-Path -LiteralPath $InstallRoot)
   dshCommand = $dsh
+  pnpmCommand = $pnpm
+  pnpmVersion = $pnpmVersion
   dshVersion = $dshVersion
   requestedDshVersion = [string]$versions.dsh
   webProfile = $profile
@@ -66,6 +71,7 @@ $items = [ordered]@{
 }
 $errors = @()
 if (-not $items.dshCommand) { $errors += '未找到 dsh.cmd' }
+if (-not $items.pnpmCommand) { $errors += '未找到 pnpm.cmd；请运行 install.ps1 -DesktopOnly -Repair' }
 if (-not $items.webUiInstalled) { $errors += '未找到 @linxin666/dsh-web-ui-all' }
 if (-not $items.skinInstalled) { $errors += "未找到皮肤包：$skinName" }
 if (-not (Test-Path -LiteralPath $items.globalPatch)) { $errors += '未找到全局 Cordis patch 文件' }

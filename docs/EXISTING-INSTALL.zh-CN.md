@@ -1,4 +1,4 @@
-# 已有安装接入指南
+﻿# 已有安装接入指南
 
 本指南适用于你已经在 Windows 上安装了 DeepSeek Harness 和 `dsh-web-ui`，现在只想把本项目作为桌面窗口使用的情况。
 
@@ -15,7 +15,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 ## 2. 接入模式会做什么
 
-- 查找现有 `dsh.cmd`
+- 查找现有 `dsh.cmd`，并确保 pnpm 可供运行中的 DSH 更新检查使用
 - 检查 `%USERPROFILE%\.dsh\profiles\web` 中的 Web UI
 - 确保皮肤包存在并写入 web profile dependency
 - 只更新标记的 managed patch，不覆盖你自己的配置
@@ -30,6 +30,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 Get-Command node.exe
 Get-Command npm.cmd
 Test-Path "$env:APPDATA\npm\dsh.cmd"
+& "$env:APPDATA\npm\pnpm.cmd" --version
 Test-Path "$env:USERPROFILE\.dsh\profiles\web\package.json"
 ```
 
