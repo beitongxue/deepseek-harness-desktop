@@ -43,7 +43,7 @@ Copy-Item "$env:USERPROFILE\.dsh" "$env:USERPROFILE\.dsh.backup" -Recurse
 .\Start-DeepSeek-Harness.ps1 -Status
 ```
 
-如果原生补丁因上游 `worker.cjs` 结构变化而失败，安装器会停止并保留原文件，不要手工盲改。先检查错误中的锚点，再针对新版本更新 `patches/native-directory-picker-owner.patch.ps1`。
+如果当前 DSH 已内置 `GetForegroundWindow()` 所有者传递，安装器会识别为上游已支持并不再写入补丁或备份。若原生补丁仍因上游 `worker.cjs` 结构变化而失败，安装器会停止并保留原文件；不要手工盲改，应先检查错误中的锚点，再针对新版本更新 `patches/native-directory-picker-owner.patch.ps1`。
 
 ## 回滚
 

@@ -150,7 +150,10 @@ function Ensure-Skin([string]$DshCommand) {
 }
 function Apply-Configuration {
   $backupRoot = Join-Path $env:USERPROFILE '.dsh\backups\deepseek-harness-desktop'
-  $legacySkin = '(?ms)^# dsh-skin managed block\. The package is provided by the upstream dsh-web-ui project\.[\r\n]+.*?(?=^\s*$|\z)'
+  # Migrate the legacy hand-written skin block used by early desktop builds.
+# Leaving its `- id:` entries in place makes current DSH try to patch non-existent
+# plugin entries before it can apply the selected skin.
+$legacySkin = '(?ms)(?:^# dsh-skin managed block\. The package is provided by the upstream dsh-web-ui project\.[\r\n]+.*?(?=^\s*$|\z)|^# --- dsh-skin managed \(auto-generated; do not edit\) ---\r?\n.*?^# --- end dsh-skin managed ---\r?\n?)'
   $global = Update-ManagedTextBlock -Path (Join-Path $env:USERPROFILE '.dsh\cordis.patch.yml') -Marker 'deepseek-harness-desktop:skin' -Block (Get-SkinPatch $Skin) -BackupRoot $backupRoot -LegacyPattern $legacySkin
 
   # DSH requires every profile overlay to parse as a top-level YAML array.

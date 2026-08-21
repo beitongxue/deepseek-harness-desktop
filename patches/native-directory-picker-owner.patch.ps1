@@ -40,6 +40,24 @@ if ($content.Contains($marker)) {
 
 $threadAnchor = 'const getCurrentThreadId = kernel32.func("__stdcall", "GetCurrentThreadId", "uint32", []);'
 $ownerBinding = 'const getForegroundWindow = user32.func("__stdcall", "GetForegroundWindow", "void *", []);'
+$upstreamOwnerAware = $content.Contains($ownerBinding) -and
+  $content.Contains('show: () => method(dialog, SLOT_SHOW, protoShow)(getForegroundWindow()),')
+if ($upstreamOwnerAware) {
+  # DSH 0.1.0-rc.6 includes this exact owner-aware implementation upstream.
+  # Do not rewrite it or create a restore backup for code we do not own.
+  Write-Host "当前 DeepSeek Harness 已内置原生目录选择器置前支持，无需额外补丁：$worker"
+  if ($PassThru) {
+    return [pscustomobject]@{
+      Path = $worker
+      Backup = $null
+      OriginalHash = (Get-Hash $worker)
+      PatchedHash = (Get-Hash $worker)
+      AlreadyPatched = $true
+      UpstreamSupported = $true
+    }
+  }
+  exit 0
+}
 $required = @(
   $threadAnchor,
   'show: () => method(dialog, SLOT_SHOW, protoShow)(null),',

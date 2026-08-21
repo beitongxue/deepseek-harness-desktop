@@ -45,6 +45,10 @@ foreach ($relative in $requiredFiles) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "缺少必要文件：$path" }
 }
 
+$nativePatch = Get-Content -LiteralPath (Join-Path $root 'patches/native-directory-picker-owner.patch.ps1') -Raw -Encoding UTF8
+if (-not $nativePatch.Contains('$upstreamOwnerAware') -or -not $nativePatch.Contains('getForegroundWindow()),')) {
+  throw 'native picker patch must recognize the upstream owner-aware implementation.'
+}
 $profileTemplate = Get-Content -LiteralPath (Join-Path $root 'config/web-profile.cordis.patch.yml') -Raw -Encoding UTF8
 if ($profileTemplate -notmatch '(?m)^\s*\[\]\s*$') { throw 'web profile patch 模板必须包含顶层 YAML 数组 []。' }
 foreach ($launcher in @('Start DeepSeek Harness.cmd', 'Start DeepSeek Harness.vbs')) {
