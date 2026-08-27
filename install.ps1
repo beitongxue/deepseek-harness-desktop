@@ -89,7 +89,9 @@ function Ensure-Harness {
   $null = Require-Node
   $npm = Get-NpmCommand
   Write-Step "安装 DeepSeek Harness $($versions.dsh)"
-  & $npm install --global --no-fund --no-audit "@deepseek-ai/dsh@$($versions.dsh)"
+  # Keep npm progress visible without letting its stdout become this function's return value.
+  # The caller expects only a dsh.cmd path.
+  & $npm install --global --no-fund --no-audit "@deepseek-ai/dsh@$($versions.dsh)" | Out-Host
   if ($LASTEXITCODE -ne 0) { throw "DeepSeek Harness 安装失败，退出码：$LASTEXITCODE" }
   $result = Get-DshCommandPath
   if (-not $result) { throw '安装后未找到 dsh.cmd。请确认 npm global bin 目录已加入 PATH。' }
@@ -104,6 +106,12 @@ function Ensure-WebUi([string]$DshCommand) {
     Write-Host '复用已有 Web UI profile。' -ForegroundColor DarkGray
     return
   }
+  # The modern aggregate package includes this feature. Earlier installers added
+  # it as a separate local tarball, whose old browser module loader is not
+  # compatible with current DSH. Remove the standalone profile entry first.
+  if (Remove-WebProfileDependency -Name '@linxin666/dsh-tool-describe-image' -RemoveBundle) {
+    Write-Host '已清理新版 Web UI 已内置的旧图片识别插件条目。' -ForegroundColor DarkGray
+  }
   Write-Step "安装 Web UI $($versions.webUi)"
   & $DshCommand plugin --profile web add "@linxin666/dsh-web-ui-all@$($versions.webUi)"
   if ($LASTEXITCODE -ne 0) { throw "Web UI 安装失败，退出码：$LASTEXITCODE" }
@@ -111,36 +119,29 @@ function Ensure-WebUi([string]$DshCommand) {
 function Ensure-Skin([string]$DshCommand) {
   if ($Skin -eq 'None') { return $null }
   $name = Get-SkinPackageName $Skin
-  $installed = Join-Path (Get-WebProfileRoot) "node_modules\@linxin666\dsh-client-ui-skin-$Skin\package.json"
-  $local = Get-StableSkinPath $Skin
-  $localExistedBefore = Test-Path -LiteralPath (Join-Path $local 'package.json')
-
-  # Always materialize the stable local package before writing a link dependency.
-  # Otherwise an existing package in node_modules could leave a dangling link
-  # on a fresh machine or after a partial cleanup.
-  if (-not $localExistedBefore) {
-    $source = Get-InstalledSkinSource $Skin
-    if (-not $source) { throw "未找到皮肤 $Skin。请先安装 @linxin666/dsh-web-ui-all，或使用 -Skin None。" }
-    $local = Ensure-LocalSkinPackage $Skin
+  $skinVersion = [string]$versions.skinVersion
+  $installedManifest = Join-Path (Get-WebProfileRoot) "node_modules\@linxin666\dsh-client-ui-skin-$Skin\package.json"
+  $installedVersion = $null
+  if (Test-Path -LiteralPath $installedManifest) {
+    try { $installedVersion = [string]((Read-Utf8Text $installedManifest | ConvertFrom-Json).version) } catch { }
   }
-  if (-not (Test-Path -LiteralPath (Join-Path $local 'package.json'))) {
-    throw "皮肤包已准备但 package.json 不存在：$local"
-  }
-  if (-not (Test-Path -LiteralPath $installed)) {
-    Write-Step "注册皮肤 $name"
-    & $DshCommand plugin --profile web add $local
+  if ($Repair -or -not $installedVersion -or $installedVersion -ne $skinVersion) {
+    Write-Step "安装皮肤 $name $skinVersion"
+    # Do not let dsh stdout become part of the structured return value of this function.
+    & $DshCommand plugin --profile web add "$name@$skinVersion" | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "皮肤安装失败，退出码：$LASTEXITCODE" }
   }
-  # 皮肤由全局 managed patch 激活；不要再次把它加入 profile bundles。
-  $spec = "link:$local"
-  Ensure-WebProfilePackage -Name $name -Spec $spec -RemoveBundle | Out-Null
+  # A registry dependency prevents an old local client bundle from surviving a DSH upgrade.
+  Ensure-WebProfilePackage -Name $name -Spec $skinVersion -RemoveBundle | Out-Null
   return [pscustomobject]@{
     Name = $name
-    LocalPath = $local
-    LocalCreated = (-not $localExistedBefore)
-    Spec = $spec
+    LocalPath = $null
+    LocalCreated = $false
+    Spec = $skinVersion
   }
-}function Get-SkinPatch([string]$SkinName) {
+}
+
+function Get-SkinPatch([string]$SkinName) {
   if ($SkinName -eq 'None') { return '# no default skin enabled by this installation' }
   return ((
     '- insert:',

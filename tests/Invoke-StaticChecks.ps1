@@ -20,7 +20,7 @@ foreach ($file in $scriptFiles) {
 
 $manifestPath = Join-Path $root 'versions.json'
 $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-foreach ($name in @('dsh', 'webUi', 'defaultSkin', 'pnpm', 'minimumNodeMajor', 'defaultPort')) {
+foreach ($name in @('dsh', 'webUi', 'defaultSkin', 'skinVersion', 'pnpm', 'minimumNodeMajor', 'defaultPort')) {
   if (-not $manifest.PSObject.Properties[$name] -or $null -eq $manifest.$name) {
     throw "versions.json 缺少字段：$name"
   }
