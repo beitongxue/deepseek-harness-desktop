@@ -78,6 +78,19 @@ function Get-DshCommand {
   if (Test-Path -LiteralPath $path) { return $path }
   return (Get-CommandPath 'dsh.cmd')
 }
+function Test-ExpectedDshWebProcess([int]$ProcessId) {
+  $candidate = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction SilentlyContinue
+  if (-not $candidate -or $candidate.Name -ne 'node.exe' -or [string]::IsNullOrWhiteSpace($candidate.CommandLine)) { return $null }
+  $portPattern = '--port\s+' + [regex]::Escape([string]$configuredPort) + '(?:\s|$)'
+  if ($candidate.CommandLine -notmatch '(?i)@deepseek-ai\\dsh\\lib\\bin\.js"?\s+web(?:\s|$)' -or $candidate.CommandLine -notmatch $portPattern) { return $null }
+  return $candidate
+}
+function Get-ListeningDshWebProcess {
+  $listener = Get-NetTCPConnection -LocalPort $configuredPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (-not $listener) { return $null }
+  return (Test-ExpectedDshWebProcess -ProcessId $listener.OwningProcess)
+}
+
 function Get-Browser {
   $candidates = @(
     (Get-CommandPath 'chrome.exe'),
@@ -104,19 +117,22 @@ if ($Status) {
 }
 if ($Stop) {
   $process = Get-TrackedProcess
-  if ($process) {
-    Stop-Process -Id $process.Id -Force
+  $verified = $null
+  if ($process) { $verified = Test-ExpectedDshWebProcess -ProcessId $process.Id }
+  if (-not $verified -and (Test-DshWeb)) { $verified = Get-ListeningDshWebProcess }
+  if ($verified) {
+    Stop-Process -Id $verified.ProcessId -Force
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
-    Write-Host "已停止 DeepSeek Harness 启动进程：$($process.Id)"
+    Write-Host "已停止 DeepSeek Harness Web 进程：$($verified.ProcessId)"
   } elseif (Test-DshWeb) {
-    Write-Warning '服务仍在运行，但没有找到本启动器记录的 PID；为避免误杀其他实例，未强制终止。'
+    Write-Warning '服务仍在运行，但端口所属进程不是可验证的 DeepSeek Harness Web 实例；为避免误杀其他程序，未强制终止。'
     exit 2
   } else {
+    Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
     Write-Host 'DeepSeek Harness 当前未运行。'
   }
   exit 0
 }
-
 if (-not (Test-DshWeb)) {
   $dsh = Get-DshCommand
   if (-not $dsh) { Show-Failure '未找到 dsh.cmd。请先运行 install.ps1 或 install.ps1 -DesktopOnly。'; exit 1 }
